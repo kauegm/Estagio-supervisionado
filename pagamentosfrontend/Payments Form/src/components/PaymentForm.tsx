@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react";
+import {useState} from "react";
 import {useForm} from 'react-hook-form';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "./ui/card";
 import {Input} from "./ui/input";
@@ -8,7 +8,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "./u
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "./ui/tabs";
 import {CheckCircle2, Copy, CreditCard, Lock, QrCode, Receipt, Smartphone, Wallet} from "lucide-react";
 import {toast} from "sonner";
-import { apiRequest } from "./apiClient";
+import {apiRequest} from "./apiClient";
 
 interface CardFormData {
   cardNumber: string;
@@ -136,8 +136,6 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
       );
 
       const tokenData = await tokenResponse.json();
-      console.log(payload)
-      console.log("TOKEN DATA:", tokenData);
 
       const response = await fetch("http://localhost:8080/api/payments/card", {
           method: "POST",
@@ -146,7 +144,6 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
               token: tokenData.id,
               amount: Number(productTotal.toFixed(2)),
               installments: data.installments,
-              paymentMethodId: data.paymentMethodId,
               paymentType: paymentMethod,
               email: data.email,
               cpf: data.cpf,
