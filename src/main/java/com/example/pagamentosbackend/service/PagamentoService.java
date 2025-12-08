@@ -36,10 +36,8 @@ public class PagamentoService {
                 PaymentCreateRequest.builder()
                         .transactionAmount(BigDecimal.valueOf(request.getAmount()))
                         .token(request.getToken())
-//                        .paymentTypeId(request.getPaymentTypeId())
                         .description("Estágio Supervisionado - Teste Cartão")
                         .installments(request.getInstallments())
-                        .paymentMethodId(request.getPaymentMethodId())
                         .payer(
                                 PaymentPayerRequest.builder()
                                         .email(request.getEmail())

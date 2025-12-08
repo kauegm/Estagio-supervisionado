@@ -21,6 +21,7 @@ interface CardFormData {
   city: string;
   zipCode: string;
   country: string;
+  cpf: string;
 }
 
 interface PixFormData {
@@ -143,7 +144,7 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
           body: JSON.stringify({
               token: tokenData.id,
               amount: Number(productTotal.toFixed(2)),
-              installments: data.installments,
+              installments: 1,
               paymentType: paymentMethod,
               email: data.email,
               cpf: data.cpf,
@@ -178,15 +179,23 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
       }
     } else if (paymentMethod === "credit") {
         const credit = await gerarPagamentoCartao( "credit_card", data, Number(productTotal.toFixed(2)))
-        if(credit) {
+        if(credit.status == 'approved') {
             setIsSuccess(true);
             toast.success("Cartão de crédito processado com sucesso!");
         }
+        if(credit.status == 'rejected') {
+            setIsSuccess(false);
+            toast.error("Cartão de crédito recusado!");
+        }
     } else if (paymentMethod === "debit") {
         const debit = await gerarPagamentoCartao("debit_card", data, Number(productTotal.toFixed(2)))
-        if (debit) {
+        if(debit.status == 'approved') {
             setIsSuccess(true);
             toast.success("Cartão de débito processado com sucesso!");
+        }
+        if(debit.status == 'rejected') {
+            setIsSuccess(false);
+            toast.error("Cartão de débito recusado!");
         }
     } else {
       setIsProcessing(false);
@@ -213,6 +222,11 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
                     setIsSuccess(false);
                     setPixQrCode(null);
                     setBoletoCode(null);
+
+                      creditForm.reset();
+                      debitForm.reset();
+                      pixForm.reset();
+                      boletoForm.reset();
                   }}
                   variant="outline"
                   className="mt-4"
@@ -243,11 +257,11 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="credit" className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4" />
-                Credit
+                Crédito
               </TabsTrigger>
               <TabsTrigger value="debit" className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4" />
-                Debit
+                Débito
               </TabsTrigger>
               <TabsTrigger value="pix" className="flex items-center gap-2">
                 <Smartphone className="w-4 h-4" />
@@ -375,24 +389,9 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
                           />
                       </div>
 
-                      {/* INSTALLMENTS (opcional mas útil) */}
-                      <div className="space-y-2">
-                          <Label>Parcelas</Label>
-                          <Select onValueChange={(value) => creditForm.setValue("installments", Number(value))}>
-                              <SelectTrigger>
-                                  <SelectValue placeholder="1x" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value="1">1x</SelectItem>
-                                  <SelectItem value="2">2x</SelectItem>
-                                  <SelectItem value="3">3x</SelectItem>
-                              </SelectContent>
-                          </Select>
-                      </div>
-
                       {/* BUTTON */}
                       <Button type="submit" className="w-full" disabled={isProcessing}>
-                          {isProcessing ? "Processando..." : "Pagar com Cartão"}
+                          {isProcessing ? "Processando..." : "Pagar com Cartão de Crédito"}
                       </Button>
 
                   </form>
@@ -402,174 +401,122 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
             <TabsContent value="debit">
               <form onSubmit={debitForm.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Card Information */}
-                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="debit-cardNumber">Card Number</Label>
-                    <div className="relative">
+                      <Label htmlFor="credit-cardNumber">Número do Cartão</Label>
                       <Input
-                          id="debit-cardNumber"
+                          id="credit-cardNumber"
                           placeholder="1234 5678 9012 3456"
                           maxLength={19}
                           {...debitForm.register("cardNumber", {
-                            required: "Card number is required",
-                            minLength: {
-                              value: 19,
-                              message: "Please enter a valid card number",
-                            },
+                              required: "Número do cartão é obrigatório",
+                              minLength: { value: 19, message: "Número inválido" }
                           })}
                           onChange={(e) => {
-                            const formatted = formatCardNumber(e.target.value);
-                            debitForm.setValue("cardNumber", formatted);
+                              const formatted = formatCardNumber(e.target.value);
+                              debitForm.setValue("cardNumber", formatted);
                           }}
                       />
-                      <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    </div>
-                    {debitForm.formState.errors.cardNumber && (
-                        <p className="text-sm text-red-500">{debitForm.formState.errors.cardNumber.message}</p>
-                    )}
                   </div>
 
+                  {/* CARDHOLDER NAME */}
                   <div className="space-y-2">
-                    <Label htmlFor="debit-cardholderName">Cardholder Name</Label>
-                    <Input
-                        id="debit-cardholderName"
-                        placeholder="John Doe"
-                        {...debitForm.register("cardholderName", {
-                          required: "Cardholder name is required",
-                        })}
-                    />
+                      <Label htmlFor="credit-cardholderName">Nome impresso no cartão</Label>
+                      <Input
+                          id="credit-cardholderName"
+                          placeholder="JOÃO SILVA"
+                          {...debitForm.register("cardholderName", {
+                              required: "Nome do titular é obrigatório"
+                          })}
+                      />
                   </div>
 
+                  {/* EXPIRATION AND CVV */}
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="debit-expiryMonth">Month</Label>
-                      <Select onValueChange={(value) => debitForm.setValue("expiryMonth", value)}>
-                        <SelectTrigger id="debit-expiryMonth">
-                          <SelectValue placeholder="MM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                              <SelectItem key={month} value={month.toString().padStart(2, "0")}>
-                                {month.toString().padStart(2, "0")}
-                              </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="debit-expiryYear">Year</Label>
-                      <Select onValueChange={(value) => debitForm.setValue("expiryYear", value)}>
-                        <SelectTrigger id="debit-expiryYear">
-                          <SelectValue placeholder="YY" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 10 }, (_, i) => {
-                            const year = new Date().getFullYear() + i;
-                            return (
-                                <SelectItem key={year} value={year.toString()}>
-                                  {year}
-                                </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                      {/* MONTH */}
+                      <div className="space-y-2">
+                          <Label>Mês</Label>
+                          <Select onValueChange={(value) => debitForm.setValue("expiryMonth", value)}>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="MM" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month =>
+                                      <SelectItem key={month} value={month.toString().padStart(2, "0")}>
+                                          {month.toString().padStart(2, "0")}
+                                      </SelectItem>
+                                  )}
+                              </SelectContent>
+                          </Select>
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="debit-cvv">CVV</Label>
-                      <Input
-                          id="debit-cvv"
-                          placeholder="123"
-                          maxLength={4}
-                          {...debitForm.register("cvv", {
-                            required: "CVV is required",
-                            minLength: {
-                              value: 3,
-                              message: "CVV must be 3-4 digits",
-                            },
-                          })}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, "");
-                            debitForm.setValue("cvv", value);
-                          }}
-                      />
-                    </div>
+                      {/* YEAR */}
+                      <div className="space-y-2">
+                          <Label>Ano</Label>
+                          <Select onValueChange={(value) => debitForm.setValue("expiryYear", value)}>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="YY" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {Array.from({ length: 10 }, (_, i) => {
+                                      const year = new Date().getFullYear() + i;
+                                      return (
+                                          <SelectItem key={year} value={year.toString()}>
+                                              {year}
+                                          </SelectItem>
+                                      );
+                                  })}
+                              </SelectContent>
+                          </Select>
+                      </div>
+
+                      {/* CVV */}
+                      <div className="space-y-2">
+                          <Label htmlFor="credit-cvv">CVV</Label>
+                          <Input
+                              id="credit-cvv"
+                              placeholder="123"
+                              maxLength={4}
+                              {...debitForm.register("cvv", {
+                                  required: "CVV é obrigatório",
+                                  minLength: { value: 3, message: "CVV inválido" }
+                              })}
+                              onChange={(e) => {
+                                  const v = e.target.value.replace(/\D/g, "");
+                                  debitForm.setValue("cvv", v);
+                              }}
+                          />
+                      </div>
                   </div>
-                </div>
 
-                {/* Billing Information */}
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-slate-700">Billing Information</h3>
-
+                  {/* EMAIL */}
                   <div className="space-y-2">
-                    <Label htmlFor="debit-email">Email</Label>
-                    <Input
-                        id="debit-email"
-                        type="email"
-                        placeholder="john@example.com"
-                        {...debitForm.register("email", {
-                          required: "Email is required",
-                        })}
-                    />
+                      <Label>Email</Label>
+                      <Input
+                          type="email"
+                          placeholder="cliente@email.com"
+                          {...debitForm.register("email", {
+                              required: "Email obrigatório"
+                          })}
+                      />
                   </div>
 
+                  {/* CPF */}
                   <div className="space-y-2">
-                    <Label htmlFor="debit-billingAddress">Street Address</Label>
-                    <Input
-                        id="debit-billingAddress"
-                        placeholder="123 Main Street"
-                        {...debitForm.register("billingAddress", {
-                          required: "Billing address is required",
-                        })}
-                    />
+                      <Label>CPF</Label>
+                      <Input
+                          placeholder="000.000.000-00"
+                          {...debitForm.register("cpf", {
+                              required: "CPF é obrigatório"
+                          })}
+                          onChange={(e) => debitForm.setValue("cpf", e.target.value.replace(/\D/g, ""))}
+                      />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="debit-city">City</Label>
-                      <Input
-                          id="debit-city"
-                          placeholder="São Paulo"
-                          {...debitForm.register("city", {
-                            required: "City is required",
-                          })}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="debit-zipCode">ZIP Code</Label>
-                      <Input
-                          id="debit-zipCode"
-                          placeholder="01310-100"
-                          {...debitForm.register("zipCode", {
-                            required: "ZIP code is required",
-                          })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <div className="space-y-4 pt-4">
+                  {/* BUTTON */}
                   <Button type="submit" className="w-full" disabled={isProcessing}>
-                    {isProcessing ? (
-                        <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Processing...
-                    </span>
-                    ) : (
-                        <span className="flex items-center gap-2">
-                      <Lock className="w-4 h-4" />
-                      Pay with Debit Card
-                    </span>
-                    )}
+                      {isProcessing ? "Processando..." : "Pagar com Cartão de Débito"}
                   </Button>
-
-                  <p className="text-center text-sm text-slate-500">
-                    Your payment information is encrypted and secure
-                  </p>
-                </div>
               </form>
             </TabsContent>
 
@@ -687,7 +634,7 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
 
                       <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                         <p className="text-sm text-amber-800">
-                          Pague este boleto em qualquer banco, caixa eletrônico ou internet banking. O pagamento pode levar até 2 dias úteis para ser processado.
+                          O pagamento pode levar até 2 dias úteis para ser processado.
                         </p>
                       </div>
 

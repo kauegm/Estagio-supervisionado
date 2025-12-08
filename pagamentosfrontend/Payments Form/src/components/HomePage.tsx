@@ -4,9 +4,11 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ShoppingCart, Star } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import {toast} from "sonner";
 
 interface HomePageProps {
   onBuyNow: (product: Product) => void;
+  onNavigate: (page: "home" | "checkout" | "about" | "login" | "signup") => void;
 }
 
 const products: Product[] = [
@@ -60,7 +62,7 @@ const products: Product[] = [
   },
 ];
 
-export default function HomePage({ onBuyNow }: HomePageProps) {
+export default function HomePage({ onBuyNow, onNavigate }: HomePageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Hero Section */}
@@ -106,7 +108,17 @@ export default function HomePage({ onBuyNow }: HomePageProps) {
               <CardFooter>
                 <Button 
                   className="w-full" 
-                  onClick={() => onBuyNow(product)}
+                  onClick={() => {
+                    const user = localStorage.getItem("currentUser");
+
+                    if (!user) {
+                      toast.error("Você precisa estar logado para comprar.");
+                      onNavigate("login");
+                      return;
+                    }
+
+                    onBuyNow(product)
+                  }}
                 >
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   Comprar agora
