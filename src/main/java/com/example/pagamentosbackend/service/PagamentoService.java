@@ -26,9 +26,6 @@ public class PagamentoService {
         this.paymentClient = new PaymentClient();
     }
 
-    @Value("${mercadopago.access.token}")
-    private String accessToken;
-
     public PagamentoResponse payWithCard(CardPaymentRequest request) throws Exception {
         PaymentClient client = new PaymentClient();
 
@@ -37,7 +34,7 @@ public class PagamentoService {
                         .transactionAmount(BigDecimal.valueOf(request.getAmount()))
                         .token(request.getToken())
                         .description("Estágio Supervisionado - Teste Cartão")
-                        .installments(request.getInstallments())
+                        .installments(request.getInstallments()) // quantidade de parcelas
                         .payer(
                                 PaymentPayerRequest.builder()
                                         .email(request.getEmail())
@@ -66,7 +63,7 @@ public class PagamentoService {
                         .email("test_user_123@example.com")
                         .firstName("TEST")
                         .identification(IdentificationRequest.builder()
-                                .type("CPF") // Use "CPF" ou "CNPJ"
+                                .type("CPF")
                                 .number("12345678909") // Número de documento válido de teste
                                 .build())
                         .build())

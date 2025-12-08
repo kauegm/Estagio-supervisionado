@@ -2,7 +2,6 @@ package com.example.pagamentosbackend.controller;
 
 import com.example.pagamentosbackend.dto.BoletoPagamentoResponse;
 import com.example.pagamentosbackend.dto.CardPaymentRequest;
-import com.example.pagamentosbackend.dto.PagamentoRequest;
 import com.example.pagamentosbackend.dto.PagamentoResponse;
 import com.example.pagamentosbackend.dto.PixPagamentoResponse;
 import com.example.pagamentosbackend.service.PagamentoService;

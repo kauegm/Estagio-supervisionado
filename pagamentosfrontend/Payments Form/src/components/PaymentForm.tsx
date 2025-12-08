@@ -110,7 +110,7 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
     return await response.json();
   }
 
-  async function gerarPagamentoCartao(paymentMethod: string, data: any, amount: number) {
+  async function gerarPagamentoCartao(paymentMethod: string, data: any) {
       const payload = {
           card_number: data.cardNumber.replace(/\s/g, ""),
           expiration_month: Number(data.expiryMonth),
@@ -178,7 +178,7 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
         toast.success("Boleto gerado!");
       }
     } else if (paymentMethod === "credit") {
-        const credit = await gerarPagamentoCartao( "credit_card", data, Number(productTotal.toFixed(2)))
+        const credit = await gerarPagamentoCartao( "credit_card", data)
         if(credit.status == 'approved') {
             setIsSuccess(true);
             toast.success("Cartão de crédito processado com sucesso!");
@@ -188,7 +188,7 @@ export default function PaymentForm({ productTotal }: PaymentFormProps) {
             toast.error("Cartão de crédito recusado!");
         }
     } else if (paymentMethod === "debit") {
-        const debit = await gerarPagamentoCartao("debit_card", data, Number(productTotal.toFixed(2)))
+        const debit = await gerarPagamentoCartao("debit_card", data)
         if(debit.status == 'approved') {
             setIsSuccess(true);
             toast.success("Cartão de débito processado com sucesso!");
